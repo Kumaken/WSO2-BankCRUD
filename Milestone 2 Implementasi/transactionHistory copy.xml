@@ -1,0 +1,8 @@
+<body>
+   <p:getTransactionHistory xmlns:p="https://bankcrud.com">
+      <!--Exactly 1 occurrence-->
+      <xs:sender_account xmlns:xs="https://bankcrud.com">${senderID}</xs:sender_account>
+      <!--Exactly 1 occurrence-->
+      <xs:receiver_account xmlns:xs="https://bankcrud.com">${receiverID}</xs:receiver_account>
+   </p:getTransactionHistory>
+</body>

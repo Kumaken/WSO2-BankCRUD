@@ -1,0 +1,8 @@
+<body>
+   <p:updateBalance xmlns:p="https://bankcrud.com">
+      <!--Exactly 1 occurrence-->
+      <xs:balance xmlns:xs="https://bankcrud.com">${NewAccountBalance}</xs:balance>
+      <!--Exactly 1 occurrence-->
+      <xs:user_ID xmlns:xs="https://bankcrud.com">${accountID}</xs:user_ID>
+   </p:updateBalance>
+</body>

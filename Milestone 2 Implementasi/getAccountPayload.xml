@@ -1,0 +1,5 @@
+<body>
+   <p:getAccountBalance xmlns:p="https://bankcrud.com">
+      <xs:accountID xmlns:xs="https://bankcrud.com">${accountID}</xs:accountID>
+   </p:getAccountBalance>
+</body>

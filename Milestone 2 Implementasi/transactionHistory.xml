@@ -1,0 +1,9 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="https://bankcrud.com">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <ser:getTransactionHistory>
+         <sender_account>${senderID}</sender_account>
+         <receiver_account>${receiverID}</receiver_account>
+      </ser:getTransactionHistory>
+   </soapenv:Body>
+</soapenv:Envelope>
