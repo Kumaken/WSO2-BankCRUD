@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="BankCRUD">
+  <process id="debit" name="Debit" isExecutable="true">
+    <startEvent id="startevent1" name="Start">
+      <extensionElements>
+        <activiti:formProperty id="accountID" name="accountID" type="string" variable="accountID"></activiti:formProperty>
+        <activiti:formProperty id="amount" name="amount" type="long" variable="amount"></activiti:formProperty>
+      </extensionElements>
+    </startEvent>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <serviceTask id="servicetask1" name="Debit" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
+      <extensionElements>
+        <activiti:field name="serviceURL">
+          <activiti:string>http://if4052.internal.cloudapp.net:8280/services/bankcrud_ds</activiti:string>
+        </activiti:field>
+        <activiti:field name="payload">
+          <activiti:expression>&lt;p:updateBalance xmlns:p="https://bankcrud.com"&gt;
+      &lt;xs:balance xmlns:xs="https://bankcrud.com"&gt;${NewAccountBalance}&lt;/xs:balance&gt;
+      &lt;xs:user_ID xmlns:xs="https://bankcrud.com"&gt;${accountID}&lt;/xs:user_ID&gt;
+ &lt;/p:updateBalance&gt;</activiti:expression>
+        </activiti:field>
+        <activiti:field name="soapVersion">
+          <activiti:string>soap12</activiti:string>
+        </activiti:field>
+        <activiti:field name="soapAction">
+          <activiti:string>updateBalance</activiti:string>
+        </activiti:field>
+        <activiti:field name="outputVariable">
+          <activiti:string>debitResult</activiti:string>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="flow2" sourceRef="servicetask1" targetRef="endevent1"></sequenceFlow>
+    <serviceTask id="servicetask2" name="Get Account Balance" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
+      <extensionElements>
+        <activiti:field name="serviceURL">
+          <activiti:string>http://if4052.internal.cloudapp.net:8280/services/bankcrud_ds</activiti:string>
+        </activiti:field>
+        <activiti:field name="payload">
+          <activiti:expression>
+   &lt;p:getAccountBalance xmlns:p="https://bankcrud.com"&gt;
+      &lt;xs:accountID xmlns:xs="https://bankcrud.com"&gt;${accountID}&lt;/xs:accountID&gt;
+   &lt;/p:getAccountBalance&gt;
+</activiti:expression>
+        </activiti:field>
+        <activiti:field name="soapVersion">
+          <activiti:string>soap12</activiti:string>
+        </activiti:field>
+        <activiti:field name="outputVariable">
+          <activiti:string>accountBalanceOutput</activiti:string>
+        </activiti:field>
+        <activiti:field name="soapAction">
+          <activiti:string>getAccountBalance</activiti:string>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="flow3" sourceRef="startevent1" targetRef="servicetask2"></sequenceFlow>
+    <scriptTask id="scripttask1" name="Extract Account Balance" scriptFormat="javascript" activiti:resultVariable="NewAccountBalance" activiti:autoStoreVariables="false">
+      <script>function parseXML(r) {
+	for (
+		var n = -1, e = 0, t = 0, i = [], s = {}, a = -1;
+		-1 !== (n = r.indexOf('&lt;', n + 1)) &amp;&amp; -1 !== (e = r.indexOf('&gt;', n + 1));
+
+	) {
+		var l = r.substring(n, e + 1),
+			u = l[1];
+		if ('?' !== u &amp;&amp; '/' !== u) {
+			var g = !0;
+			-1 === (t = l.indexOf(' ')) &amp;&amp; ((t = l.length - 1), (g = !1)), (a = n + l.length);
+			var f = '/' === l[l.length - 2],
+				o = l.substring(1, t);
+			if ((f || i.push(o), g)) {
+				var v = l.match(/\w+\=\".*?\"/g);
+				if (null !== v) {
+					for (var h = {}, b = v.length, x = 0; x &lt; b; x++) {
+						var d = v[x].indexOf('"');
+						h[v[x].substring(0, d - 1)] = v[x].substring(d + 1, v[x].length - 1);
+					}
+					s[i.join('.') + (f ? '.' + o : '') + '[]'] = h;
+				}
+			}
+		} else {
+			var m = i.pop();
+			if (-1 === a || m !== l.substring(2, l.length - 1)) continue;
+			var p = i.join('.') + '.' + m,
+				O = r.substring(a, n);
+			void 0 === s[p] ? (s[p] = O) : s[p] instanceof Array ? s[p].push(O) : (s[p] = [s[p], O]), (a = -1);
+		}
+	}
+	return s;
+}
+
+var xmlStr = accountBalanceOutput,
+	xmlObj = parseXML(xmlStr),
+	result = xmlObj['ACCOUNT.ACCOUNT_DETAIL.balance'];
+NewAccountBalance = Number(result);
+</script>
+    </scriptTask>
+    <sequenceFlow id="flow4" sourceRef="servicetask2" targetRef="scripttask1"></sequenceFlow>
+    <sequenceFlow id="flow5" sourceRef="scripttask1" targetRef="servicetask1"></sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_debit">
+    <bpmndi:BPMNPlane bpmnElement="debit" id="BPMNPlane_debit">
+      <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="10.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="590.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="servicetask1" id="BPMNShape_servicetask1">
+        <omgdc:Bounds height="81.0" width="131.0" x="420.0" y="117.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="servicetask2" id="BPMNShape_servicetask2">
+        <omgdc:Bounds height="68.0" width="115.0" x="90.0" y="124.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask1" id="BPMNShape_scripttask1">
+        <omgdc:Bounds height="68.0" width="111.0" x="250.0" y="124.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+        <omgdi:waypoint x="551.0" y="157.0"></omgdi:waypoint>
+        <omgdi:waypoint x="590.0" y="157.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
+        <omgdi:waypoint x="45.0" y="157.0"></omgdi:waypoint>
+        <omgdi:waypoint x="90.0" y="158.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4">
+        <omgdi:waypoint x="205.0" y="158.0"></omgdi:waypoint>
+        <omgdi:waypoint x="250.0" y="158.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
+        <omgdi:waypoint x="361.0" y="158.0"></omgdi:waypoint>
+        <omgdi:waypoint x="420.0" y="157.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

@@ -74,3 +74,6 @@ var accountBalance = parseInt(xmlObj['ACCOUNT.ACCOUNT_DETAIL.balance']);
 NewAccountBalance = accountBalance - ${amount}
 
 <scriptTask id="scripttask1" name="Extract Account Balance" scriptFormat="javascript" activiti:resultVariable="NewAccountBalance" activiti:autoStoreVariables="false">
+
+
+activiti:resultVariable="new_acc_balance"

@@ -31,12 +31,6 @@ function parseXML(n) {
 	}
 	return t;
 }
-
-var obj = parseXML(accountBalanceOutput),
-	accountBalance = obj['ACCOUNT.ACCOUNT_DETAIL.balance'];
-new_acc_balance = Number(parseInt(accountBalance) + amount);
-
-// var xmlStr = accountBalanceOutput;
-// var xmlObj = parseXML(xmlStr);
-// var accountBalance = parseInt(xmlObj['ACCOUNT.ACCOUNT_DETAIL.balance']);
-// NewAccountBalance = Number(accountBalance + Number(amount));
+var obj = parseXML(acc_balance),
+	balance = obj['accountCollection.account.balance'];
+receiverValid = void 0 !== balance;
