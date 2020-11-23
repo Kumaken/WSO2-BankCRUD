@@ -34,7 +34,7 @@ function parseXML(n) {
 
 var obj = parseXML(accountBalanceOutput),
 	accountBalance = obj['ACCOUNT.ACCOUNT_DETAIL.balance'];
-new_acc_balance = Number(parseInt(accountBalance) + amount);
+new_acc_balance = (parseInt(accountBalance) + amount) | 0;
 
 // var xmlStr = accountBalanceOutput;
 // var xmlObj = parseXML(xmlStr);

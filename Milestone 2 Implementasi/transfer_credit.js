@@ -1,64 +1,44 @@
-function parseXML(xml) {
-	var beg = -1;
-	var end = 0;
-	var tmp = 0;
-	var current = [];
-	var obj = {};
-	var from = -1;
+function parseXML(n) {
+	for (
+		var a = -1, r = 0, e = 0, i = [], t = {}, s = -1;
+		-1 !== (a = n.indexOf('<', a + 1)) && -1 !== (r = n.indexOf('>', a + 1));
 
-	while (true) {
-		beg = xml.indexOf('<', beg + 1);
-		if (beg === -1) break;
-		end = xml.indexOf('>', beg + 1);
-		if (end === -1) break;
-		var el = xml.substring(beg, end + 1);
-		var c = el[1];
-		if (c === '?' || c === '/') {
-			var o = current.pop();
-			if (from === -1 || o !== el.substring(2, el.length - 1)) continue;
-			var path = current.join('.') + '.' + o;
-			var value = xml.substring(from, beg);
-
-			if (typeof obj[path] === 'undefined') obj[path] = value;
-			else if (obj[path] instanceof Array) obj[path].push(value);
-			else obj[path] = [obj[path], value];
-
-			from = -1;
-			continue;
+	) {
+		var c = n.substring(a, r + 1),
+			l = c[1];
+		if ('?' !== l && '/' !== l) {
+			var o = !0;
+			-1 === (e = c.indexOf(' ')) && ((e = c.length - 1), (o = !1)), (s = a + c.length);
+			var u = '/' === c[c.length - 2],
+				g = c.substring(1, e);
+			if ((u || i.push(g), o)) {
+				var v = c.match(/\w+\=\".*?\"/g);
+				if (null !== v) {
+					for (var b = {}, f = v.length, h = 0; h < f; h++) {
+						var d = v[h].indexOf('"');
+						b[v[h].substring(0, d - 1)] = v[h].substring(d + 1, v[h].length - 1);
+					}
+					t[i.join('.') + (u ? '.' + g : '') + '[]'] = b;
+				}
+			}
+		} else {
+			var p = i.pop();
+			if (-1 === s || p !== c.substring(2, c.length - 1)) continue;
+			var j = i.join('.') + '.' + p,
+				x = n.substring(s, a);
+			void 0 === t[j] ? (t[j] = x) : t[j] instanceof Array ? t[j].push(x) : (t[j] = [t[j], x]), (s = -1);
 		}
-
-		tmp = el.indexOf(' ');
-		var hasAttributes = true;
-		if (tmp === -1) {
-			tmp = el.length - 1;
-			hasAttributes = false;
-		}
-
-		from = beg + el.length;
-
-		var isSingle = el[el.length - 2] === '/';
-		var name = el.substring(1, tmp);
-
-		if (!isSingle) current.push(name);
-
-		if (!hasAttributes) continue;
-
-		var match = el.match(/\w+\=\".*?\"/g);
-		if (match === null) continue;
-
-		var attr = {};
-		var length = match.length;
-
-		for (var i = 0; i < length; i++) {
-			var index = match[i].indexOf('"');
-			attr[match[i].substring(0, index - 1)] = match[i].substring(index + 1, match[i].length - 1);
-		}
-		obj[current.join('.') + (isSingle ? '.' + name : '') + '[]'] = attr;
 	}
-	return obj;
+	return t;
 }
 
-var xmlStr = receiverAccountBalance;
-var xmlObj = parseXML(xmlStr);
-var accountBalance = parseInt(xmlObj['ACCOUNT.ACCOUNT_DETAIL.balance']);
-NewReceiverAccountBalance = accountBalance + amount;
+var obj = parseXML(receiverAccountBalance),
+	accountBalance = obj['ACCOUNT.ACCOUNT_DETAIL.balance'];
+new_receiver_balance = (parseInt(accountBalance) + amount) | 0;
+
+// var xmlStr = receiverAccountBalance;
+// var xmlObj = parseXML(xmlStr);
+// var accountBalance = parseInt(xmlObj['ACCOUNT.ACCOUNT_DETAIL.balance']);
+// NewReceiverAccountBalance = accountBalance + amount;
+
+// activiti:resultVariable="new_receiver_balance"
