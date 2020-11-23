@@ -40,3 +40,5 @@ new_sender_balance = (parseInt(accountBalance) - amount) | 0;
 // var xmlObj = parseXML(xmlStr);
 // var accountBalance = parseInt(xmlObj['ACCOUNT.ACCOUNT_DETAIL.balance']);
 // NewSenderAccountBalance = accountBalance - amount;
+
+activiti: resultVariable = 'new_sender_balance';
