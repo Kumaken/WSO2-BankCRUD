@@ -28,7 +28,7 @@
         </activiti:field>
       </extensionElements>
     </serviceTask>
-    <scriptTask id="scripttask1" name="Extract Account Balance" scriptFormat="javascript" activiti:autoStoreVariables="false">
+    <scriptTask id="scripttask1" name="Extract Account Balance" scriptFormat="javascript" activiti:resultVariable="new_acc_balance" activiti:autoStoreVariables="false">
       <script>function parseXML(n) {
 	for (
 		var a = -1, r = 0, e = 0, i = [], t = {}, s = -1;
@@ -65,7 +65,7 @@
 
 var obj = parseXML(accountBalanceOutput),
 	accountBalance = obj['ACCOUNT.ACCOUNT_DETAIL.balance'];
-new_acc_balance = Number(parseInt(accountBalance) + amount);
+new_acc_balance = (parseInt(accountBalance) + amount) | 0;
 </script>
     </scriptTask>
     <serviceTask id="servicetask2" name="Credit" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
@@ -111,7 +111,7 @@ new_acc_balance = Number(parseInt(accountBalance) + amount);
         <omgdc:Bounds height="71.0" width="111.0" x="130.0" y="122.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="scripttask1" id="BPMNShape_scripttask1">
-        <omgdc:Bounds height="55.0" width="105.0" x="270.0" y="130.0"></omgdc:Bounds>
+        <omgdc:Bounds height="63.0" width="111.0" x="270.0" y="126.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="servicetask2" id="BPMNShape_servicetask2">
         <omgdc:Bounds height="55.0" width="105.0" x="418.0" y="130.0"></omgdc:Bounds>
@@ -131,7 +131,7 @@ new_acc_balance = Number(parseInt(accountBalance) + amount);
         <omgdi:waypoint x="270.0" y="157.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
-        <omgdi:waypoint x="375.0" y="157.0"></omgdi:waypoint>
+        <omgdi:waypoint x="381.0" y="157.0"></omgdi:waypoint>
         <omgdi:waypoint x="418.0" y="157.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">

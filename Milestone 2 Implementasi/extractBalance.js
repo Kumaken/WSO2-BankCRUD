@@ -32,14 +32,7 @@ function parseXML(n) {
 	return t;
 }
 
-var obj = parseXML(accountBalanceOutput),
+var obj = parseXML(senderAccountBalanceOutput),
 	accountBalance = obj['ACCOUNT.ACCOUNT_DETAIL.balance'];
-
-new_acc_balance = (parseInt(accountBalance) - amount) | 0;
-
-// var xmlStr = accountBalanceOutput;
-// var xmlObj = parseXML(xmlStr);
-// var accountBalance = parseInt(xmlObj['ACCOUNT.ACCOUNT_DETAIL.balance']);
-// NewAccountBalance = Number(accountBalance + Number(amount));
-
-// // activiti:resultVariable="new_acc_balance"
+extractedBalance = parseInt(accountBalance);
+// activiti:resultVariable="extractedBalance"

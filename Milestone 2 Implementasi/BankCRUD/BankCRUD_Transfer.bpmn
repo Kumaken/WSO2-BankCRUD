@@ -3,9 +3,9 @@
   <process id="transfer" name="Transfer" isExecutable="true">
     <startEvent id="startevent1" name="Start">
       <extensionElements>
-        <activiti:formProperty id="senderAccountID" name="senderAccountID" type="string" required="true"></activiti:formProperty>
-        <activiti:formProperty id="amount" name="amount" type="long"></activiti:formProperty>
-        <activiti:formProperty id="receiverAccountID" name="receiverAccountID" type="string" required="true"></activiti:formProperty>
+        <activiti:formProperty id="senderAccountID" name="senderAccountID" type="string" variable="senderAccountID" default="26929018150322178" required="true"></activiti:formProperty>
+        <activiti:formProperty id="amount" name="amount" type="long" variable="amount" default="1"></activiti:formProperty>
+        <activiti:formProperty id="receiverAccountID" name="receiverAccountID" type="string" variable="receiverAccountID" default="26929018150322179" required="true"></activiti:formProperty>
       </extensionElements>
     </startEvent>
     <endEvent id="endevent1" name="End"></endEvent>
@@ -15,20 +15,16 @@
           <activiti:string>http://if4052.internal.cloudapp.net:8280/services/bankcrud_ds</activiti:string>
         </activiti:field>
         <activiti:field name="payload">
-          <activiti:expression>&lt;body&gt;
-   &lt;p:updateBalance xmlns:p="https://bankcrud.com"&gt;
-      &lt;!--Exactly 1 occurrence--&gt;
-      &lt;xs:balance xmlns:xs="https://bankcrud.com"&gt;${NewSenderAccountBalance}&lt;/xs:balance&gt;
-      &lt;!--Exactly 1 occurrence--&gt;
+          <activiti:expression>&lt;p:updateBalance xmlns:p="https://bankcrud.com"&gt;
+      &lt;xs:balance xmlns:xs="https://bankcrud.com"&gt;${new_sender_balance}&lt;/xs:balance&gt;
       &lt;xs:user_ID xmlns:xs="https://bankcrud.com"&gt;${senderAccountID}&lt;/xs:user_ID&gt;
-   &lt;/p:updateBalance&gt;
-&lt;/body&gt;</activiti:expression>
+ &lt;/p:updateBalance&gt;</activiti:expression>
         </activiti:field>
         <activiti:field name="soapVersion">
           <activiti:string>soap12</activiti:string>
         </activiti:field>
         <activiti:field name="soapAction">
-          <activiti:string>urn:updateBalance</activiti:string>
+          <activiti:string>updateBalance</activiti:string>
         </activiti:field>
         <activiti:field name="outputVariable">
           <activiti:string>debitResult</activiti:string>
@@ -60,74 +56,46 @@
       </extensionElements>
     </serviceTask>
     <sequenceFlow id="flow3" sourceRef="startevent1" targetRef="servicetask2"></sequenceFlow>
-    <scriptTask id="scripttask1" name="Extract Sender Account Balance" scriptFormat="javascript" activiti:resultVariable="NewSenderAccountBalance" activiti:autoStoreVariables="false">
-      <script>function parseXML(xml) {
-	var beg = -1;
-	var end = 0;
-	var tmp = 0;
-	var current = [];
-	var obj = {};
-	var from = -1;
+    <scriptTask id="scripttask1" name="Cut Sender Account Balance" scriptFormat="javascript" activiti:resultVariable="new_sender_balance" activiti:autoStoreVariables="false">
+      <script>function parseXML(n) {
+	for (
+		var a = -1, r = 0, e = 0, i = [], t = {}, s = -1;
+		-1 !== (a = n.indexOf('&lt;', a + 1)) &amp;&amp; -1 !== (r = n.indexOf('&gt;', a + 1));
 
-	while (true) {
-		beg = xml.indexOf('&lt;', beg + 1);
-		if (beg === -1) break;
-		end = xml.indexOf('&gt;', beg + 1);
-		if (end === -1) break;
-		var el = xml.substring(beg, end + 1);
-		var c = el[1];
-		if (c === '?' || c === '/') {
-			var o = current.pop();
-			if (from === -1 || o !== el.substring(2, el.length - 1)) continue;
-			var path = current.join('.') + '.' + o;
-			var value = xml.substring(from, beg);
-
-			if (typeof obj[path] === 'undefined') obj[path] = value;
-			else if (obj[path] instanceof Array) obj[path].push(value);
-			else obj[path] = [obj[path], value];
-
-			from = -1;
-			continue;
+	) {
+		var c = n.substring(a, r + 1),
+			l = c[1];
+		if ('?' !== l &amp;&amp; '/' !== l) {
+			var o = !0;
+			-1 === (e = c.indexOf(' ')) &amp;&amp; ((e = c.length - 1), (o = !1)), (s = a + c.length);
+			var u = '/' === c[c.length - 2],
+				g = c.substring(1, e);
+			if ((u || i.push(g), o)) {
+				var v = c.match(/\w+\=\".*?\"/g);
+				if (null !== v) {
+					for (var b = {}, f = v.length, h = 0; h &lt; f; h++) {
+						var d = v[h].indexOf('"');
+						b[v[h].substring(0, d - 1)] = v[h].substring(d + 1, v[h].length - 1);
+					}
+					t[i.join('.') + (u ? '.' + g : '') + '[]'] = b;
+				}
+			}
+		} else {
+			var p = i.pop();
+			if (-1 === s || p !== c.substring(2, c.length - 1)) continue;
+			var j = i.join('.') + '.' + p,
+				x = n.substring(s, a);
+			void 0 === t[j] ? (t[j] = x) : t[j] instanceof Array ? t[j].push(x) : (t[j] = [t[j], x]), (s = -1);
 		}
-
-		tmp = el.indexOf(' ');
-		var hasAttributes = true;
-		if (tmp === -1) {
-			tmp = el.length - 1;
-			hasAttributes = false;
-		}
-
-		from = beg + el.length;
-
-		var isSingle = el[el.length - 2] === '/';
-		var name = el.substring(1, tmp);
-
-		if (!isSingle) current.push(name);
-
-		if (!hasAttributes) continue;
-
-		var match = el.match(/\w+\=\".*?\"/g);
-		if (match === null) continue;
-
-		var attr = {};
-		var length = match.length;
-
-		for (var i = 0; i &lt; length; i++) {
-			var index = match[i].indexOf('"');
-			attr[match[i].substring(0, index - 1)] = match[i].substring(index + 1, match[i].length - 1);
-		}
-		obj[current.join('.') + (isSingle ? '.' + name : '') + '[]'] = attr;
 	}
-	return obj;
+	return t;
 }
 
-var xmlStr = senderAccountBalanceOutput;
-var xmlObj = parseXML(xmlStr);
-var accountBalance = parseInt(xmlObj['ACCOUNT.ACCOUNT_DETAIL.balance']);
-NewSenderAccountBalance = accountBalance - amount;
-</script>
+var obj = parseXML(senderAccountBalanceOutput),
+	accountBalance = obj['ACCOUNT.ACCOUNT_DETAIL.balance'];
+new_sender_balance = (parseInt(accountBalance) - amount) | 0;</script>
     </scriptTask>
-    <sequenceFlow id="flow4" sourceRef="servicetask2" targetRef="scripttask1"></sequenceFlow>
+    <sequenceFlow id="flow4" sourceRef="servicetask2" targetRef="scripttask3"></sequenceFlow>
     <sequenceFlow id="flow5" sourceRef="scripttask1" targetRef="servicetask1"></sequenceFlow>
     <serviceTask id="servicetask3" name="Get Receiver Account Balance" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
       <extensionElements>
@@ -162,7 +130,7 @@ NewSenderAccountBalance = accountBalance - amount;
           <activiti:expression>&lt;body&gt;
    &lt;p:updateBalance xmlns:p="https://bankcrud.com"&gt;
       &lt;!--Exactly 1 occurrence--&gt;
-      &lt;xs:balance xmlns:xs="https://bankcrud.com"&gt;${NewReceiverAccountBalance}&lt;/xs:balance&gt;
+      &lt;xs:balance xmlns:xs="https://bankcrud.com"&gt;${new_receiver_balance}&lt;/xs:balance&gt;
       &lt;!--Exactly 1 occurrence--&gt;
       &lt;xs:user_ID xmlns:xs="https://bankcrud.com"&gt;${receiverAccountID}&lt;/xs:user_ID&gt;
    &lt;/p:updateBalance&gt;
@@ -179,77 +147,100 @@ NewSenderAccountBalance = accountBalance - amount;
         </activiti:field>
       </extensionElements>
     </serviceTask>
-    <scriptTask id="scripttask2" name="Extract Receiver Account Balance" scriptFormat="javascript" activiti:autoStoreVariables="false">
-      <script>function parseXML(xml) {
-	var beg = -1;
-	var end = 0;
-	var tmp = 0;
-	var current = [];
-	var obj = {};
-	var from = -1;
+    <scriptTask id="scripttask2" name="Add Receiver Account Balance" scriptFormat="javascript" activiti:resultVariable="new_receiver_balance" activiti:autoStoreVariables="false">
+      <script>function parseXML(n) {
+	for (
+		var a = -1, r = 0, e = 0, i = [], t = {}, s = -1;
+		-1 !== (a = n.indexOf('&lt;', a + 1)) &amp;&amp; -1 !== (r = n.indexOf('&gt;', a + 1));
 
-	while (true) {
-		beg = xml.indexOf('&lt;', beg + 1);
-		if (beg === -1) break;
-		end = xml.indexOf('&gt;', beg + 1);
-		if (end === -1) break;
-		var el = xml.substring(beg, end + 1);
-		var c = el[1];
-		if (c === '?' || c === '/') {
-			var o = current.pop();
-			if (from === -1 || o !== el.substring(2, el.length - 1)) continue;
-			var path = current.join('.') + '.' + o;
-			var value = xml.substring(from, beg);
-
-			if (typeof obj[path] === 'undefined') obj[path] = value;
-			else if (obj[path] instanceof Array) obj[path].push(value);
-			else obj[path] = [obj[path], value];
-
-			from = -1;
-			continue;
+	) {
+		var c = n.substring(a, r + 1),
+			l = c[1];
+		if ('?' !== l &amp;&amp; '/' !== l) {
+			var o = !0;
+			-1 === (e = c.indexOf(' ')) &amp;&amp; ((e = c.length - 1), (o = !1)), (s = a + c.length);
+			var u = '/' === c[c.length - 2],
+				g = c.substring(1, e);
+			if ((u || i.push(g), o)) {
+				var v = c.match(/\w+\=\".*?\"/g);
+				if (null !== v) {
+					for (var b = {}, f = v.length, h = 0; h &lt; f; h++) {
+						var d = v[h].indexOf('"');
+						b[v[h].substring(0, d - 1)] = v[h].substring(d + 1, v[h].length - 1);
+					}
+					t[i.join('.') + (u ? '.' + g : '') + '[]'] = b;
+				}
+			}
+		} else {
+			var p = i.pop();
+			if (-1 === s || p !== c.substring(2, c.length - 1)) continue;
+			var j = i.join('.') + '.' + p,
+				x = n.substring(s, a);
+			void 0 === t[j] ? (t[j] = x) : t[j] instanceof Array ? t[j].push(x) : (t[j] = [t[j], x]), (s = -1);
 		}
-
-		tmp = el.indexOf(' ');
-		var hasAttributes = true;
-		if (tmp === -1) {
-			tmp = el.length - 1;
-			hasAttributes = false;
-		}
-
-		from = beg + el.length;
-
-		var isSingle = el[el.length - 2] === '/';
-		var name = el.substring(1, tmp);
-
-		if (!isSingle) current.push(name);
-
-		if (!hasAttributes) continue;
-
-		var match = el.match(/\w+\=\".*?\"/g);
-		if (match === null) continue;
-
-		var attr = {};
-		var length = match.length;
-
-		for (var i = 0; i &lt; length; i++) {
-			var index = match[i].indexOf('"');
-			attr[match[i].substring(0, index - 1)] = match[i].substring(index + 1, match[i].length - 1);
-		}
-		obj[current.join('.') + (isSingle ? '.' + name : '') + '[]'] = attr;
 	}
-	return obj;
+	return t;
 }
 
-var xmlStr = receiverAccountBalance;
-var xmlObj = parseXML(xmlStr);
-var accountBalance = parseInt(xmlObj['ACCOUNT.ACCOUNT_DETAIL.balance']);
-NewReceiverAccountBalance = accountBalance + amount;
-</script>
+var obj = parseXML(receiverAccountBalance),
+	accountBalance = obj['ACCOUNT.ACCOUNT_DETAIL.balance'];
+new_receiver_balance = (parseInt(accountBalance) + amount) | 0;</script>
     </scriptTask>
     <sequenceFlow id="flow6" sourceRef="servicetask3" targetRef="scripttask2"></sequenceFlow>
     <sequenceFlow id="flow7" sourceRef="servicetask1" targetRef="servicetask3"></sequenceFlow>
     <sequenceFlow id="flow8" sourceRef="scripttask2" targetRef="servicetask4"></sequenceFlow>
     <sequenceFlow id="flow9" sourceRef="servicetask4" targetRef="endevent1"></sequenceFlow>
+    <scriptTask id="scripttask3" name="Extract Account Balance" scriptFormat="javascript" activiti:resultVariable="extractedBalance" activiti:autoStoreVariables="false">
+      <script>function parseXML(n) {
+	for (
+		var a = -1, r = 0, e = 0, i = [], t = {}, s = -1;
+		-1 !== (a = n.indexOf('&lt;', a + 1)) &amp;&amp; -1 !== (r = n.indexOf('&gt;', a + 1));
+
+	) {
+		var c = n.substring(a, r + 1),
+			l = c[1];
+		if ('?' !== l &amp;&amp; '/' !== l) {
+			var o = !0;
+			-1 === (e = c.indexOf(' ')) &amp;&amp; ((e = c.length - 1), (o = !1)), (s = a + c.length);
+			var u = '/' === c[c.length - 2],
+				g = c.substring(1, e);
+			if ((u || i.push(g), o)) {
+				var v = c.match(/\w+\=\".*?\"/g);
+				if (null !== v) {
+					for (var b = {}, f = v.length, h = 0; h &lt; f; h++) {
+						var d = v[h].indexOf('"');
+						b[v[h].substring(0, d - 1)] = v[h].substring(d + 1, v[h].length - 1);
+					}
+					t[i.join('.') + (u ? '.' + g : '') + '[]'] = b;
+				}
+			}
+		} else {
+			var p = i.pop();
+			if (-1 === s || p !== c.substring(2, c.length - 1)) continue;
+			var j = i.join('.') + '.' + p,
+				x = n.substring(s, a);
+			void 0 === t[j] ? (t[j] = x) : t[j] instanceof Array ? t[j].push(x) : (t[j] = [t[j], x]), (s = -1);
+		}
+	}
+	return t;
+}
+
+var obj = parseXML(senderAccountBalanceOutput),
+	accountBalance = obj['ACCOUNT.ACCOUNT_DETAIL.balance'];
+extractedBalance = parseInt(accountBalance);</script>
+    </scriptTask>
+    <scriptTask id="scripttask4" name="Check if enough Balance" scriptFormat="javascript" activiti:resultVariable="isBalanceEnough" activiti:autoStoreVariables="false">
+      <script>isBalanceEnough = void 0 !== extractedBalance &amp;&amp; extractedBalance &gt;= amount;</script>
+    </scriptTask>
+    <parallelGateway id="parallelgateway1" name="Parallel Gateway"></parallelGateway>
+    <sequenceFlow id="flow10" name="if balance is enough" sourceRef="parallelgateway1" targetRef="scripttask1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${isBalanceEnough==true}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow11" sourceRef="scripttask4" targetRef="parallelgateway1"></sequenceFlow>
+    <sequenceFlow id="flow12" sourceRef="scripttask3" targetRef="scripttask4"></sequenceFlow>
+    <sequenceFlow id="flow13" name="if balance is not enough" sourceRef="parallelgateway1" targetRef="endevent1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${isBalanceEnough==false}]]></conditionExpression>
+    </sequenceFlow>
   </process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_transfer">
     <bpmndi:BPMNPlane bpmnElement="transfer" id="BPMNPlane_transfer">
@@ -257,53 +248,84 @@ NewReceiverAccountBalance = accountBalance + amount;
         <omgdc:Bounds height="35.0" width="35.0" x="10.0" y="140.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
-        <omgdc:Bounds height="35.0" width="35.0" x="44.0" y="290.0"></omgdc:Bounds>
+        <omgdc:Bounds height="35.0" width="35.0" x="34.0" y="488.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="servicetask1" id="BPMNShape_servicetask1">
-        <omgdc:Bounds height="81.0" width="131.0" x="420.0" y="117.0"></omgdc:Bounds>
+        <omgdc:Bounds height="81.0" width="131.0" x="660.0" y="300.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="servicetask2" id="BPMNShape_servicetask2">
-        <omgdc:Bounds height="68.0" width="115.0" x="90.0" y="124.0"></omgdc:Bounds>
+        <omgdc:Bounds height="68.0" width="115.0" x="68.0" y="124.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="scripttask1" id="BPMNShape_scripttask1">
-        <omgdc:Bounds height="68.0" width="111.0" x="250.0" y="124.0"></omgdc:Bounds>
+        <omgdc:Bounds height="68.0" width="111.0" x="670.0" y="124.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="servicetask3" id="BPMNShape_servicetask3">
-        <omgdc:Bounds height="71.0" width="128.0" x="430.0" y="272.0"></omgdc:Bounds>
+        <omgdc:Bounds height="71.0" width="128.0" x="420.0" y="470.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="servicetask4" id="BPMNShape_servicetask4">
-        <omgdc:Bounds height="55.0" width="105.0" x="120.0" y="280.0"></omgdc:Bounds>
+        <omgdc:Bounds height="55.0" width="105.0" x="110.0" y="478.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="scripttask2" id="BPMNShape_scripttask2">
-        <omgdc:Bounds height="71.0" width="121.0" x="260.0" y="272.0"></omgdc:Bounds>
+        <omgdc:Bounds height="71.0" width="121.0" x="250.0" y="470.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask3" id="BPMNShape_scripttask3">
+        <omgdc:Bounds height="55.0" width="105.0" x="214.0" y="130.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask4" id="BPMNShape_scripttask4">
+        <omgdc:Bounds height="55.0" width="105.0" x="340.0" y="129.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="parallelgateway1" id="BPMNShape_parallelgateway1">
+        <omgdc:Bounds height="40.0" width="40.0" x="520.0" y="137.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
         <omgdi:waypoint x="45.0" y="157.0"></omgdi:waypoint>
-        <omgdi:waypoint x="90.0" y="158.0"></omgdi:waypoint>
+        <omgdi:waypoint x="68.0" y="158.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4">
-        <omgdi:waypoint x="205.0" y="158.0"></omgdi:waypoint>
-        <omgdi:waypoint x="250.0" y="158.0"></omgdi:waypoint>
+        <omgdi:waypoint x="183.0" y="158.0"></omgdi:waypoint>
+        <omgdi:waypoint x="214.0" y="157.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
-        <omgdi:waypoint x="361.0" y="158.0"></omgdi:waypoint>
-        <omgdi:waypoint x="420.0" y="157.0"></omgdi:waypoint>
+        <omgdi:waypoint x="725.0" y="192.0"></omgdi:waypoint>
+        <omgdi:waypoint x="725.0" y="300.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
-        <omgdi:waypoint x="430.0" y="307.0"></omgdi:waypoint>
-        <omgdi:waypoint x="381.0" y="307.0"></omgdi:waypoint>
+        <omgdi:waypoint x="420.0" y="505.0"></omgdi:waypoint>
+        <omgdi:waypoint x="371.0" y="505.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
-        <omgdi:waypoint x="485.0" y="198.0"></omgdi:waypoint>
-        <omgdi:waypoint x="494.0" y="272.0"></omgdi:waypoint>
+        <omgdi:waypoint x="725.0" y="381.0"></omgdi:waypoint>
+        <omgdi:waypoint x="484.0" y="470.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
-        <omgdi:waypoint x="260.0" y="307.0"></omgdi:waypoint>
-        <omgdi:waypoint x="225.0" y="307.0"></omgdi:waypoint>
+        <omgdi:waypoint x="250.0" y="505.0"></omgdi:waypoint>
+        <omgdi:waypoint x="215.0" y="505.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9">
-        <omgdi:waypoint x="120.0" y="307.0"></omgdi:waypoint>
-        <omgdi:waypoint x="79.0" y="307.0"></omgdi:waypoint>
+        <omgdi:waypoint x="110.0" y="505.0"></omgdi:waypoint>
+        <omgdi:waypoint x="69.0" y="505.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10">
+        <omgdi:waypoint x="560.0" y="157.0"></omgdi:waypoint>
+        <omgdi:waypoint x="670.0" y="158.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="42.0" width="100.0" x="560.0" y="157.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow11" id="BPMNEdge_flow11">
+        <omgdi:waypoint x="445.0" y="156.0"></omgdi:waypoint>
+        <omgdi:waypoint x="520.0" y="157.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow12" id="BPMNEdge_flow12">
+        <omgdi:waypoint x="319.0" y="157.0"></omgdi:waypoint>
+        <omgdi:waypoint x="340.0" y="156.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow13" id="BPMNEdge_flow13">
+        <omgdi:waypoint x="540.0" y="177.0"></omgdi:waypoint>
+        <omgdi:waypoint x="51.0" y="488.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="42.0" width="100.0" x="540.0" y="177.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

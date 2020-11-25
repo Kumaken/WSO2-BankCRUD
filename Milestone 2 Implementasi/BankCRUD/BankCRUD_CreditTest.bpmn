@@ -65,7 +65,7 @@
 
 var obj = parseXML(accountBalanceOutput),
 	accountBalance = obj['ACCOUNT.ACCOUNT_DETAIL.balance'];
-new_acc_balance = Number(parseInt(accountBalance) + amount);
+new_acc_balance = (parseInt(accountBalance) + amount) | 0;
 </script>
     </scriptTask>
     <serviceTask id="servicetask2" name="Credit" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
