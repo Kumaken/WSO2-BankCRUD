@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="BankCRUD">
+  <process id="transfer" name="Transfer" isExecutable="true">
+    <startEvent id="startevent1" name="Start">
+      <extensionElements>
+        <activiti:formProperty id="senderAccountID" name="senderAccountID" type="string" variable="senderAccountID" default="26929018150322178" required="true"></activiti:formProperty>
+        <activiti:formProperty id="amount" name="amount" type="long" variable="amount" default="1"></activiti:formProperty>
+        <activiti:formProperty id="receiverAccountID" name="receiverAccountID" type="string" variable="receiverAccountID" default="26929018150322179" required="true"></activiti:formProperty>
+        <activiti:formProperty id="receiverBankID" name="receiverBankID" type="string" variable="receiverBankID" default="1" required="true"></activiti:formProperty>
+      </extensionElements>
+    </startEvent>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <serviceTask id="servicetask1" name="Debit" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
+      <extensionElements>
+        <activiti:field name="serviceURL">
+          <activiti:string>http://if4052.internal.cloudapp.net:8280/services/bankcrud_ds</activiti:string>
+        </activiti:field>
+        <activiti:field name="payload">
+          <activiti:expression>&lt;p:updateBalance xmlns:p="https://bankcrud.com"&gt;
+      &lt;xs:balance xmlns:xs="https://bankcrud.com"&gt;${new_sender_balance}&lt;/xs:balance&gt;
+      &lt;xs:user_ID xmlns:xs="https://bankcrud.com"&gt;${senderAccountID}&lt;/xs:user_ID&gt;
+ &lt;/p:updateBalance&gt;</activiti:expression>
+        </activiti:field>
+        <activiti:field name="soapVersion">
+          <activiti:string>soap12</activiti:string>
+        </activiti:field>
+        <activiti:field name="soapAction">
+          <activiti:string>updateBalance</activiti:string>
+        </activiti:field>
+        <activiti:field name="outputVariable">
+          <activiti:string>debitResult</activiti:string>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="servicetask2" name="Get Sender Account Balance" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
+      <extensionElements>
+        <activiti:field name="serviceURL">
+          <activiti:string>http://if4052.internal.cloudapp.net:8280/services/bankcrud_ds</activiti:string>
+        </activiti:field>
+        <activiti:field name="payload">
+          <activiti:expression>&lt;body&gt;
+   &lt;p:getAccountBalance xmlns:p="https://bankcrud.com"&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:accountID xmlns:xs="https://bankcrud.com"&gt;${senderAccountID}&lt;/xs:accountID&gt;
+   &lt;/p:getAccountBalance&gt;
+&lt;/body&gt;</activiti:expression>
+        </activiti:field>
+        <activiti:field name="soapVersion">
+          <activiti:string>soap12</activiti:string>
+        </activiti:field>
+        <activiti:field name="outputVariable">
+          <activiti:string>senderAccountBalanceOutput</activiti:string>
+        </activiti:field>
+        <activiti:field name="soapAction">
+          <activiti:string>urn:getAccountBalance</activiti:string>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="flow3" sourceRef="startevent1" targetRef="servicetask2"></sequenceFlow>
+    <scriptTask id="scripttask1" name="Cut Sender Account Balance" scriptFormat="javascript" activiti:resultVariable="new_sender_balance" activiti:autoStoreVariables="false">
+      <script>function parseXML(n) {
+	for (
+		var a = -1, r = 0, e = 0, i = [], t = {}, s = -1;
+		-1 !== (a = n.indexOf('&lt;', a + 1)) &amp;&amp; -1 !== (r = n.indexOf('&gt;', a + 1));
+
+	) {
+		var c = n.substring(a, r + 1),
+			l = c[1];
+		if ('?' !== l &amp;&amp; '/' !== l) {
+			var o = !0;
+			-1 === (e = c.indexOf(' ')) &amp;&amp; ((e = c.length - 1), (o = !1)), (s = a + c.length);
+			var u = '/' === c[c.length - 2],
+				g = c.substring(1, e);
+			if ((u || i.push(g), o)) {
+				var v = c.match(/\w+\=\".*?\"/g);
+				if (null !== v) {
+					for (var b = {}, f = v.length, h = 0; h &lt; f; h++) {
+						var d = v[h].indexOf('"');
+						b[v[h].substring(0, d - 1)] = v[h].substring(d + 1, v[h].length - 1);
+					}
+					t[i.join('.') + (u ? '.' + g : '') + '[]'] = b;
+				}
+			}
+		} else {
+			var p = i.pop();
+			if (-1 === s || p !== c.substring(2, c.length - 1)) continue;
+			var j = i.join('.') + '.' + p,
+				x = n.substring(s, a);
+			void 0 === t[j] ? (t[j] = x) : t[j] instanceof Array ? t[j].push(x) : (t[j] = [t[j], x]), (s = -1);
+		}
+	}
+	return t;
+}
+
+var obj = parseXML(senderAccountBalanceOutput),
+	accountBalance = obj['ACCOUNT.ACCOUNT_DETAIL.balance'];
+new_sender_balance = (parseInt(accountBalance) - amount) | 0;</script>
+    </scriptTask>
+    <sequenceFlow id="flow4" sourceRef="servicetask2" targetRef="scripttask3"></sequenceFlow>
+    <sequenceFlow id="flow5" sourceRef="scripttask1" targetRef="servicetask1"></sequenceFlow>
+    <serviceTask id="servicetask3" name="Get Receiver Account Balance" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
+      <extensionElements>
+        <activiti:field name="serviceURL">
+          <activiti:string>http://if4052.internal.cloudapp.net:8280/services/bankcrud_ds</activiti:string>
+        </activiti:field>
+        <activiti:field name="payload">
+          <activiti:expression>&lt;body&gt;
+   &lt;p:getAccountBalance xmlns:p="https://bankcrud.com"&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:accountID xmlns:xs="https://bankcrud.com"&gt;${receiverAccountID}&lt;/xs:accountID&gt;
+   &lt;/p:getAccountBalance&gt;
+&lt;/body&gt;</activiti:expression>
+        </activiti:field>
+        <activiti:field name="soapVersion">
+          <activiti:string>soap12</activiti:string>
+        </activiti:field>
+        <activiti:field name="outputVariable">
+          <activiti:string>receiverAccountBalance</activiti:string>
+        </activiti:field>
+        <activiti:field name="soapAction">
+          <activiti:string>urn:getAccountBalance</activiti:string>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="servicetask4" name="Credit" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
+      <extensionElements>
+        <activiti:field name="serviceURL">
+          <activiti:string>http://if4052.internal.cloudapp.net:8280/services/bankcrud_ds</activiti:string>
+        </activiti:field>
+        <activiti:field name="payload">
+          <activiti:expression>&lt;body&gt;
+   &lt;p:updateBalance xmlns:p="https://bankcrud.com"&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:balance xmlns:xs="https://bankcrud.com"&gt;${new_receiver_balance}&lt;/xs:balance&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:user_ID xmlns:xs="https://bankcrud.com"&gt;${receiverAccountID}&lt;/xs:user_ID&gt;
+   &lt;/p:updateBalance&gt;
+&lt;/body&gt;</activiti:expression>
+        </activiti:field>
+        <activiti:field name="soapVersion">
+          <activiti:string>soap12</activiti:string>
+        </activiti:field>
+        <activiti:field name="outputVariable">
+          <activiti:string>creditResult</activiti:string>
+        </activiti:field>
+        <activiti:field name="soapAction">
+          <activiti:string>urn:updateBalance</activiti:string>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <scriptTask id="scripttask2" name="Add Receiver Account Balance" scriptFormat="javascript" activiti:resultVariable="new_receiver_balance" activiti:autoStoreVariables="false">
+      <script>function parseXML(n) {
+	for (
+		var a = -1, r = 0, e = 0, i = [], t = {}, s = -1;
+		-1 !== (a = n.indexOf('&lt;', a + 1)) &amp;&amp; -1 !== (r = n.indexOf('&gt;', a + 1));
+
+	) {
+		var c = n.substring(a, r + 1),
+			l = c[1];
+		if ('?' !== l &amp;&amp; '/' !== l) {
+			var o = !0;
+			-1 === (e = c.indexOf(' ')) &amp;&amp; ((e = c.length - 1), (o = !1)), (s = a + c.length);
+			var u = '/' === c[c.length - 2],
+				g = c.substring(1, e);
+			if ((u || i.push(g), o)) {
+				var v = c.match(/\w+\=\".*?\"/g);
+				if (null !== v) {
+					for (var b = {}, f = v.length, h = 0; h &lt; f; h++) {
+						var d = v[h].indexOf('"');
+						b[v[h].substring(0, d - 1)] = v[h].substring(d + 1, v[h].length - 1);
+					}
+					t[i.join('.') + (u ? '.' + g : '') + '[]'] = b;
+				}
+			}
+		} else {
+			var p = i.pop();
+			if (-1 === s || p !== c.substring(2, c.length - 1)) continue;
+			var j = i.join('.') + '.' + p,
+				x = n.substring(s, a);
+			void 0 === t[j] ? (t[j] = x) : t[j] instanceof Array ? t[j].push(x) : (t[j] = [t[j], x]), (s = -1);
+		}
+	}
+	return t;
+}
+
+var obj = parseXML(receiverAccountBalance),
+	accountBalance = obj['ACCOUNT.ACCOUNT_DETAIL.balance'];
+new_receiver_balance = (parseInt(accountBalance) + amount) | 0;</script>
+    </scriptTask>
+    <sequenceFlow id="flow6" sourceRef="servicetask3" targetRef="scripttask2"></sequenceFlow>
+    <sequenceFlow id="flow7" sourceRef="servicetask1" targetRef="scripttask5"></sequenceFlow>
+    <sequenceFlow id="flow8" sourceRef="scripttask2" targetRef="servicetask4"></sequenceFlow>
+    <sequenceFlow id="flow9" sourceRef="servicetask4" targetRef="servicetask5"></sequenceFlow>
+    <scriptTask id="scripttask3" name="Extract Account Balance" scriptFormat="javascript" activiti:resultVariable="extractedBalance" activiti:autoStoreVariables="false">
+      <script>function parseXML(n) {
+	for (
+		var a = -1, r = 0, e = 0, i = [], t = {}, s = -1;
+		-1 !== (a = n.indexOf('&lt;', a + 1)) &amp;&amp; -1 !== (r = n.indexOf('&gt;', a + 1));
+
+	) {
+		var c = n.substring(a, r + 1),
+			l = c[1];
+		if ('?' !== l &amp;&amp; '/' !== l) {
+			var o = !0;
+			-1 === (e = c.indexOf(' ')) &amp;&amp; ((e = c.length - 1), (o = !1)), (s = a + c.length);
+			var u = '/' === c[c.length - 2],
+				g = c.substring(1, e);
+			if ((u || i.push(g), o)) {
+				var v = c.match(/\w+\=\".*?\"/g);
+				if (null !== v) {
+					for (var b = {}, f = v.length, h = 0; h &lt; f; h++) {
+						var d = v[h].indexOf('"');
+						b[v[h].substring(0, d - 1)] = v[h].substring(d + 1, v[h].length - 1);
+					}
+					t[i.join('.') + (u ? '.' + g : '') + '[]'] = b;
+				}
+			}
+		} else {
+			var p = i.pop();
+			if (-1 === s || p !== c.substring(2, c.length - 1)) continue;
+			var j = i.join('.') + '.' + p,
+				x = n.substring(s, a);
+			void 0 === t[j] ? (t[j] = x) : t[j] instanceof Array ? t[j].push(x) : (t[j] = [t[j], x]), (s = -1);
+		}
+	}
+	return t;
+}
+
+var obj = parseXML(senderAccountBalanceOutput),
+	accountBalance = obj['ACCOUNT.ACCOUNT_DETAIL.balance'];
+extractedBalance = parseInt(accountBalance);</script>
+    </scriptTask>
+    <scriptTask id="scripttask4" name="Check if enough Balance" scriptFormat="javascript" activiti:resultVariable="isBalanceEnough" activiti:autoStoreVariables="false">
+      <script>isBalanceEnough = void 0 !== extractedBalance &amp;&amp; extractedBalance &gt;= amount;</script>
+    </scriptTask>
+    <sequenceFlow id="flow10" name="if balance is enough" sourceRef="exclusivegateway2" targetRef="scripttask1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${isBalanceEnough==true}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow11" sourceRef="scripttask4" targetRef="exclusivegateway2"></sequenceFlow>
+    <sequenceFlow id="flow12" sourceRef="scripttask3" targetRef="scripttask4"></sequenceFlow>
+    <sequenceFlow id="flow13" name="if balance is not enough" sourceRef="exclusivegateway2" targetRef="endevent1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${isBalanceEnough==false}]]></conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="servicetask5" name="Insert Transaction History (IntraBank Transaction)" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
+      <extensionElements>
+        <activiti:field name="serviceURL">
+          <activiti:string>http://if4052.internal.cloudapp.net:8280/services/bankcrud_ds</activiti:string>
+        </activiti:field>
+        <activiti:field name="payload">
+          <activiti:expression>&lt;body&gt;
+   &lt;p:insertTransactionHistory xmlns:p="https://bankcrud.com"&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:sender_account xmlns:xs="https://bankcrud.com"&gt;${senderAccountID}&lt;/xs:sender_account&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:sender_bank_id xmlns:xs="https://bankcrud.com"&gt;1&lt;/xs:sender_bank_id&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:receiver_account xmlns:xs="https://bankcrud.com"&gt;${receiverAccountID}&lt;/xs:receiver_account&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:receiver_bank_id xmlns:xs="https://bankcrud.com"&gt;1&lt;/xs:receiver_bank_id&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:amount xmlns:xs="https://bankcrud.com"&gt;${amountInt}&lt;/xs:amount&gt;
+   &lt;/p:insertTransactionHistory&gt;
+&lt;/body&gt;</activiti:expression>
+        </activiti:field>
+        <activiti:field name="soapVersion">
+          <activiti:string>soap12</activiti:string>
+        </activiti:field>
+        <activiti:field name="outputVariable">
+          <activiti:string>insertTransactionHistoryResult</activiti:string>
+        </activiti:field>
+        <activiti:field name="soapAction">
+          <activiti:string>insertTransactionHistory</activiti:string>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="flow14" sourceRef="servicetask5" targetRef="endevent1"></sequenceFlow>
+    <scriptTask id="scripttask5" name="Convert Tsx History Argument to Appropriate Types" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script>amountInt = amount | 0;</script>
+    </scriptTask>
+    <sequenceFlow id="flow15" sourceRef="scripttask5" targetRef="exclusivegateway1"></sequenceFlow>
+    <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow16" name="if transfer intrabank" sourceRef="exclusivegateway1" targetRef="servicetask3">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${receiverBankID==1}]]></conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="servicetask6" name="Other Bank Transfer BPMN Service" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
+      <extensionElements>
+        <activiti:field name="serviceURL">
+          <activiti:string>http://13.76.30.114:8284/paycool/v1.0/payment</activiti:string>
+        </activiti:field>
+        <activiti:field name="payload">
+          <activiti:string>&lt;soapenv:Envelope
+	xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+	xmlns:id="id.paycool.service"&gt;
+	&lt;soapenv:Header&gt;
+		&lt;id:auth&gt;
+			&lt;!--You may enter the following 2 items in any order--&gt;
+			&lt;id:username&gt;kelompok5&lt;/id:username&gt;
+			&lt;id:password&gt;TubesIF4052!K15&lt;/id:password&gt;
+		&lt;/id:auth&gt;
+	&lt;/soapenv:Header&gt;
+	&lt;soapenv:Body&gt;
+		&lt;id:startPayment&gt;
+			&lt;id:amount&gt;10000&lt;/id:amount&gt;
+			&lt;id:description&gt;Desc&lt;/id:description&gt;
+			&lt;id:merchantId&gt;4&lt;/id:merchantId&gt;
+			&lt;id:buyerUsername&gt;kelompok5&lt;/id:buyerUsername&gt;
+		&lt;/id:startPayment&gt;
+	&lt;/soapenv:Body&gt;
+&lt;/soapenv:Envelope&gt;</activiti:string>
+        </activiti:field>
+        <activiti:field name="headers">
+          <activiti:string>&lt;id:auth
+	xmlns:id="id.paycool.service"&gt;
+	&lt;!--You may enter the following 2 items in any order--&gt;
+	&lt;id:username&gt;kelompok5&lt;/id:username&gt;
+	&lt;id:password&gt;TubesIF4052!K5&lt;/id:password&gt;
+&lt;/id:auth&gt;</activiti:string>
+        </activiti:field>
+        <activiti:field name="soapVersion">
+          <activiti:string>soap12</activiti:string>
+        </activiti:field>
+        <activiti:field name="outputVariable">
+          <activiti:string>joshOutput</activiti:string>
+        </activiti:field>
+        <activiti:field name="soapAction">
+          <activiti:string>urn:startPayment</activiti:string>
+        </activiti:field>
+        <activiti:field name="transportHeaders">
+          <activiti:string>Authorization: Bearer 83e0e49d-9693-330b-b5b6-743f2498d360</activiti:string>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="flow17" name="Transfer to another bank ..." sourceRef="exclusivegateway1" targetRef="servicetask6">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${receiverBankID==2}]]></conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="servicetask7" name="Insert Transaction History (InterBank Transaction)" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
+      <extensionElements>
+        <activiti:field name="serviceURL">
+          <activiti:string>http://if4052.internal.cloudapp.net:8280/services/bankcrud_ds</activiti:string>
+        </activiti:field>
+        <activiti:field name="payload">
+          <activiti:expression>&lt;body&gt;
+   &lt;p:insertTransactionHistory xmlns:p="https://bankcrud.com"&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:sender_account xmlns:xs="https://bankcrud.com"&gt;${senderAccountID}&lt;/xs:sender_account&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:sender_bank_id xmlns:xs="https://bankcrud.com"&gt;1&lt;/xs:sender_bank_id&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:receiver_account xmlns:xs="https://bankcrud.com"&gt;${receiverAccountID}&lt;/xs:receiver_account&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:receiver_bank_id xmlns:xs="https://bankcrud.com"&gt;${receiverBankID}&lt;/xs:receiver_bank_id&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:amount xmlns:xs="https://bankcrud.com"&gt;${amountInt}&lt;/xs:amount&gt;
+   &lt;/p:insertTransactionHistory&gt;
+&lt;/body&gt;</activiti:expression>
+        </activiti:field>
+        <activiti:field name="soapVersion">
+          <activiti:string>soap12</activiti:string>
+        </activiti:field>
+        <activiti:field name="outputVariable">
+          <activiti:string>insertTransactionHistoryResult</activiti:string>
+        </activiti:field>
+        <activiti:field name="soapAction">
+          <activiti:string>insertTransactionHistory</activiti:string>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="flow19" sourceRef="servicetask7" targetRef="endevent1"></sequenceFlow>
+    <sequenceFlow id="flow20" sourceRef="servicetask6" targetRef="servicetask7"></sequenceFlow>
+    <exclusiveGateway id="exclusivegateway2" name="Parallel Gateway"></exclusiveGateway>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_transfer">
+    <bpmndi:BPMNPlane bpmnElement="transfer" id="BPMNPlane_transfer">
+      <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="0.0" y="139.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="18.0" y="870.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="servicetask1" id="BPMNShape_servicetask1">
+        <omgdc:Bounds height="81.0" width="131.0" x="742.0" y="300.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="servicetask2" id="BPMNShape_servicetask2">
+        <omgdc:Bounds height="68.0" width="115.0" x="68.0" y="124.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask1" id="BPMNShape_scripttask1">
+        <omgdc:Bounds height="68.0" width="111.0" x="755.0" y="171.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="servicetask3" id="BPMNShape_servicetask3">
+        <omgdc:Bounds height="71.0" width="128.0" x="730.0" y="721.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="servicetask4" id="BPMNShape_servicetask4">
+        <omgdc:Bounds height="55.0" width="105.0" x="454.0" y="870.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask2" id="BPMNShape_scripttask2">
+        <omgdc:Bounds height="71.0" width="121.0" x="742.0" y="852.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask3" id="BPMNShape_scripttask3">
+        <omgdc:Bounds height="71.0" width="107.0" x="214.0" y="122.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask4" id="BPMNShape_scripttask4">
+        <omgdc:Bounds height="63.0" width="113.0" x="340.0" y="125.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="servicetask5" id="BPMNShape_servicetask5">
+        <omgdc:Bounds height="75.0" width="151.0" x="100.0" y="856.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="scripttask5" id="BPMNShape_scripttask5">
+        <omgdc:Bounds height="88.0" width="149.0" x="733.0" y="440.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway1" id="BPMNShape_exclusivegateway1">
+        <omgdc:Bounds height="40.0" width="40.0" x="773.0" y="580.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="servicetask6" id="BPMNShape_servicetask6">
+        <omgdc:Bounds height="101.0" width="171.0" x="400.0" y="586.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="servicetask7" id="BPMNShape_servicetask7">
+        <omgdc:Bounds height="80.0" width="125.0" x="184.0" y="721.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway2" id="BPMNShape_exclusivegateway2">
+        <omgdc:Bounds height="40.0" width="40.0" x="520.0" y="137.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
+        <omgdi:waypoint x="35.0" y="156.0"></omgdi:waypoint>
+        <omgdi:waypoint x="68.0" y="158.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4">
+        <omgdi:waypoint x="183.0" y="158.0"></omgdi:waypoint>
+        <omgdi:waypoint x="214.0" y="157.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
+        <omgdi:waypoint x="810.0" y="239.0"></omgdi:waypoint>
+        <omgdi:waypoint x="807.0" y="300.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
+        <omgdi:waypoint x="794.0" y="792.0"></omgdi:waypoint>
+        <omgdi:waypoint x="802.0" y="852.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+        <omgdi:waypoint x="807.0" y="381.0"></omgdi:waypoint>
+        <omgdi:waypoint x="807.0" y="440.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
+        <omgdi:waypoint x="742.0" y="887.0"></omgdi:waypoint>
+        <omgdi:waypoint x="559.0" y="897.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9">
+        <omgdi:waypoint x="454.0" y="897.0"></omgdi:waypoint>
+        <omgdi:waypoint x="251.0" y="893.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10">
+        <omgdi:waypoint x="560.0" y="157.0"></omgdi:waypoint>
+        <omgdi:waypoint x="810.0" y="171.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="97.0" x="600.0" y="147.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow11" id="BPMNEdge_flow11">
+        <omgdi:waypoint x="453.0" y="156.0"></omgdi:waypoint>
+        <omgdi:waypoint x="520.0" y="157.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow12" id="BPMNEdge_flow12">
+        <omgdi:waypoint x="321.0" y="157.0"></omgdi:waypoint>
+        <omgdi:waypoint x="340.0" y="156.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow13" id="BPMNEdge_flow13">
+        <omgdi:waypoint x="540.0" y="177.0"></omgdi:waypoint>
+        <omgdi:waypoint x="35.0" y="870.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="42.0" width="100.0" x="540.0" y="177.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow14" id="BPMNEdge_flow14">
+        <omgdi:waypoint x="100.0" y="893.0"></omgdi:waypoint>
+        <omgdi:waypoint x="53.0" y="887.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow15" id="BPMNEdge_flow15">
+        <omgdi:waypoint x="807.0" y="528.0"></omgdi:waypoint>
+        <omgdi:waypoint x="793.0" y="580.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow16" id="BPMNEdge_flow16">
+        <omgdi:waypoint x="793.0" y="620.0"></omgdi:waypoint>
+        <omgdi:waypoint x="794.0" y="721.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="95.0" x="801.0" y="639.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow17" id="BPMNEdge_flow17">
+        <omgdi:waypoint x="773.0" y="600.0"></omgdi:waypoint>
+        <omgdi:waypoint x="571.0" y="636.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="42.0" width="100.0" x="611.0" y="585.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow19" id="BPMNEdge_flow19">
+        <omgdi:waypoint x="246.0" y="801.0"></omgdi:waypoint>
+        <omgdi:waypoint x="35.0" y="870.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow20" id="BPMNEdge_flow20">
+        <omgdi:waypoint x="485.0" y="687.0"></omgdi:waypoint>
+        <omgdi:waypoint x="246.0" y="721.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

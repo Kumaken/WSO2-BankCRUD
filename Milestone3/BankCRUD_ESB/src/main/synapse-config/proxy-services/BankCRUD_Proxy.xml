@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<proxy name="BankCRUD_Proxy" startOnLoad="true" transports="http https" xmlns="http://ws.apache.org/ns/synapse">
+    <target>
+        <inSequence>
+            <filter xmlns:ns="http://org.apache.synapse/xsd" xpath="string(//accountID) != '' and //amount != 0">
+                <then>
+                    <class name="org.bankcrud.mediator.CheckSoapVersion"/>
+                    <payloadFactory media-type="json">
+                        <format>{
+"processDefinitionId":"credit2:2:93916",
+   "variables": [
+      {
+        "name":"accountID",
+        "value":"$1"
+      },
+      {
+        "name":"amount",
+        "value":$2
+      }
+   ]
+}</format>
+                        <args/>
+                    </payloadFactory>
+                    <log/>
+                    <send/>
+                </then>
+                <else>
+                    <payloadFactory media-type="xml">
+                        <format>
+                            <error xmlns="">Account ID and Amount not Valid !</error>
+                        </format>
+                        <args/>
+                    </payloadFactory>
+                    <respond/>
+                </else>
+            </filter>
+        </inSequence>
+        <outSequence/>
+        <faultSequence>
+            <makefault version="soap11">
+                <code value="soap11Env:VersionMismatch" xmlns:soap11Env="http://schemas.xmlsoap.org/soap/envelope/"/>
+                <reason value=""/>
+            </makefault>
+        </faultSequence>
+    </target>
+</proxy>

@@ -1,0 +1,27 @@
+<soapenv:Envelope
+	xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+	xmlns:id="id.paycool.service">
+	<soapenv:Header>
+		<id:auth>
+			<!--You may enter the following 2 items in any order-->
+			<id:username>kelompok5</id:username>
+			<id:password>TubesIF4052!K15</id:password>
+		</id:auth>
+	</soapenv:Header>
+	<soapenv:Body>
+		<id:startPayment>
+			<id:amount>10000</id:amount>
+			<id:description>Desc</id:description>
+			<id:merchantId>4</id:merchantId>
+			<id:buyerUsername>kelompok5</id:buyerUsername>
+		</id:startPayment>
+	</soapenv:Body>
+</soapenv:Envelope>
+
+
+<id:auth
+	xmlns:id="id.paycool.service">
+	<!--You may enter the following 2 items in any order-->
+	<id:username>kelompok5</id:username>
+	<id:password>TubesIF4052!K5</id:password>
+</id:auth>

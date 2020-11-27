@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="BankCRUD">
+  <process id="transaction_history" name="Transaction History" isExecutable="true">
+    <startEvent id="startevent1" name="Start">
+      <extensionElements>
+        <activiti:formProperty id="senderID" name="senderID" type="string"></activiti:formProperty>
+        <activiti:formProperty id="receiverID" name="receiverID" type="string"></activiti:formProperty>
+      </extensionElements>
+    </startEvent>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <serviceTask id="servicetask1" name="transaction_history" activiti:class="org.wso2.carbon.bpmn.extensions.soap.SOAPTask" activiti:extensionId="org.wso2.developerstudio.bpmn.extensions.soapTask.SOAPTask">
+      <extensionElements>
+        <activiti:field name="serviceURL">
+          <activiti:string>http://if4052.internal.cloudapp.net:8280/services/bankcrud_ds</activiti:string>
+        </activiti:field>
+        <activiti:field name="payload">
+          <activiti:expression>&lt;body&gt;
+   &lt;p:getTransactionHistory xmlns:p="https://bankcrud.com"&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:sender_account xmlns:xs="https://bankcrud.com"&gt;${senderID}&lt;/xs:sender_account&gt;
+      &lt;!--Exactly 1 occurrence--&gt;
+      &lt;xs:receiver_account xmlns:xs="https://bankcrud.com"&gt;${receiverID}&lt;/xs:receiver_account&gt;
+   &lt;/p:getTransactionHistory&gt;
+&lt;/body&gt;</activiti:expression>
+        </activiti:field>
+        <activiti:field name="soapVersion">
+          <activiti:string>soap11</activiti:string>
+        </activiti:field>
+        <activiti:field name="soapAction">
+          <activiti:string>urn:getTransactionHistory</activiti:string>
+        </activiti:field>
+        <activiti:field name="outputVariable">
+          <activiti:string>transactionHistory</activiti:string>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="flow1" sourceRef="startevent1" targetRef="servicetask1"></sequenceFlow>
+    <userTask id="usertask1" name="See Transaction History" activiti:assignee="kelompok5">
+      <extensionElements>
+        <activiti:formProperty id="transactionHistory" name="Transaction History" type="string" default="Empty" writable="false"></activiti:formProperty>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow4" sourceRef="usertask1" targetRef="endevent1"></sequenceFlow>
+    <sequenceFlow id="flow5" sourceRef="servicetask1" targetRef="usertask1"></sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_transaction_history">
+    <bpmndi:BPMNPlane bpmnElement="transaction_history" id="BPMNPlane_transaction_history">
+      <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="30.0" y="133.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="30.0" y="290.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="servicetask1" id="BPMNShape_servicetask1">
+        <omgdc:Bounds height="81.0" width="131.0" x="110.0" y="110.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="usertask1" id="BPMNShape_usertask1">
+        <omgdc:Bounds height="85.0" width="155.0" x="305.0" y="265.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+        <omgdi:waypoint x="65.0" y="150.0"></omgdi:waypoint>
+        <omgdi:waypoint x="110.0" y="150.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4">
+        <omgdi:waypoint x="305.0" y="307.0"></omgdi:waypoint>
+        <omgdi:waypoint x="65.0" y="307.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
+        <omgdi:waypoint x="175.0" y="191.0"></omgdi:waypoint>
+        <omgdi:waypoint x="382.0" y="265.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

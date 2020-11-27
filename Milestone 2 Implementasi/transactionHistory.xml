@@ -1,9 +1,14 @@
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="https://bankcrud.com">
-   <soapenv:Header/>
-   <soapenv:Body>
-      <ser:getTransactionHistory>
-         <sender_account>${senderID}</sender_account>
-         <receiver_account>${receiverID}</receiver_account>
-      </ser:getTransactionHistory>
-   </soapenv:Body>
-</soapenv:Envelope>
+<body>
+   <p:insertTransactionHistory xmlns:p="https://bankcrud.com">
+      <!--Exactly 1 occurrence-->
+      <xs:sender_account xmlns:xs="https://bankcrud.com">${senderAccountID}</xs:sender_account>
+      <!--Exactly 1 occurrence-->
+      <xs:sender_bank_id xmlns:xs="https://bankcrud.com">1</xs:sender_bank_id>
+      <!--Exactly 1 occurrence-->
+      <xs:receiver_account xmlns:xs="https://bankcrud.com">${receiverAccountID}</xs:receiver_account>
+      <!--Exactly 1 occurrence-->
+      <xs:receiver_bank_id xmlns:xs="https://bankcrud.com">${receiverBankID}</xs:receiver_bank_id>
+      <!--Exactly 1 occurrence-->
+      <xs:amount xmlns:xs="https://bankcrud.com">${amountInt}</xs:amount>
+   </p:insertTransactionHistory>
+</body>
